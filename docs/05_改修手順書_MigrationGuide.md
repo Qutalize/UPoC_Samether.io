@@ -50,7 +50,8 @@ infra/  # Terraform: network, alb, ecs_service, ecr, redis, location, frontend_s
 ```
 client/src/
 ├─ theme.ts                        ★新設: 色・フォントの単一情報源
-├─ data/stages.ts                  ★新設: ステージ定義（stages.jsonのTS版）
+├─ data/types.ts                   ★新設: 型定義（data/uecport-types.ts を配置）
+├─ data/master.ts                  ★新設: stages.master.json の fetch・freeze・セレクタ
 ├─ ui/screens/
 │  ├─ StageMapScreen.ts            ★新設: エリア選択マップ（にゃんこ大戦争風）
 │  ├─ UnlockScreen.ts              ★新設: 写真撮影→照合画面
@@ -194,7 +195,7 @@ const config: Phaser.Types.Core.GameConfig = {
 
 | 削除 | 追加 |
 |---|---|
-| CP系6メッセージ + `dailyDistance` | `JoinMsg` に `stageId: number` と `token: string` を追加。S→C: `progress` メッセージ（`{ unlocked: number[], points: number }`）、`points_award`（シェアボーナス用） |
+| CP系6メッセージ + `dailyDistance` | `JoinMsg` に `stageId: number` と `token: string` を追加。S→C: `progress` メッセージ（**`UserProgress` 全体スナップショット**。`data/uecport-types.ts` §5 参照）、`points_award`（シェアボーナス用）、`join_rejected` |
 
 ### 3.6 `server/internal/ws/hub.go`
 
@@ -209,7 +210,7 @@ const config: Phaser.Types.Core.GameConfig = {
 
 | 現在の処理 | 置き換え後 |
 |---|---|
-| `hub := NewHub(...)` を1つ生成し `/ws` 直結 | `stage.LoadStages("stages.json")` → 全ステージ分のHubを `registry` に登録 → `/ws?stage=N` で振り分け |
+| `hub := NewHub(...)` を1つ生成し `/ws` 直結 | `stage.LoadStages("stages.master.json")` → 全ステージ分のHubを `registry` に登録 → `/ws?stage=N` で振り分け |
 | — | `mux.Handle("/api/verify", verify.NewHandler(...))` を追加（照合API） |
 | `/api/map-key` | 維持（StageMapScreenが使用） |
 
@@ -246,17 +247,10 @@ export const THEME = {
 } as const;
 ```
 
-#### `client/src/data/stages.ts` — ステージ定義
-```ts
-export interface StageDef {
-  id: number; name: string;
-  center: { lat: number; lon: number };   // 地図表示用
-  spot: { name: string; lat: number; lon: number; sampleImg: string; desc: string };
-  worldSize: number; boss?: boolean; requires: number[];
-}
-export const STAGES: StageDef[] = [ /* 調布, 布田・郷土博物館, 京王多摩川, 国領, 柴崎, つつじヶ丘, 西調布・飛田給, 深大寺(boss) */ ];
-```
-サーバーの `stages.json` と同内容。二重管理を避けたければ `client/public/stages.json` を fetch する方式でも可（博物館フィードバックで頻繁に変わるならこちら推奨）。
+#### `client/src/data/types.ts` + `client/src/data/master.ts` — 型とマスタ読込
+- 型は `data/uecport-types.ts`（データ構造設計書06の成果物）をそのまま `client/src/data/types.ts` へ配置（`AreaMaster` / `SpotMaster` / `UserProgress` / `deriveAreaState`。**エリアIDは数値**、WSペイロード型は規約に従い `network/protocol.ts` へ移す）
+- マスタ実体は `data/stages.master.json` を `client/public/stages.master.json` に配置して起動時 fetch → freeze。`data/master.ts` が `getArea(id)` / `getSpot(id)` / `spotsInArea(id)` 等のセレクタを提供する。サーバーは同一ファイルを embed（博物館フィードバックでの差し替えはJSON編集のみで完結）
+- 全8エリア構成: 調布(1・初期解放), 京王多摩川(2・郷土博物館で解放), 国領(3), 柴崎(4), つつじヶ丘(5), 西調布(6), 飛田給(7), 深大寺(8・boss)。進行グラフ `1→{2,3,6}`, `3→4→5`, `6→7`, 全踏破で`8`
 
 #### `client/src/ui/screens/StageMapScreen.ts` — エリア選択マップ（本改修の主役）
 - **責務**: MapLibre地図の上に解放/未解放エリアを描き、ステージ選択→ゲーム参加 or 解放チャレンジへ分岐
@@ -272,7 +266,7 @@ export const STAGES: StageDef[] = [ /* 調布, 布田・郷土博物館, 京王�
 - **責務**: お手本アングル提示、カメラ起動、位置取得、照合API呼び出し、結果分岐
 - 主要フロー:
   - `openCamera()`: 動的に `<input type="file" accept="image/*" capture="environment">` を生成しclick
-  - `services/photoVerify.verify(stageId, file)` を await → 成功で `scene.start("UnlockSuccessScreen", {stage, photoFile})`
+  - `services/photoVerify.verify(spot.id, file)` を await → 成功で `scene.start("UnlockSuccessScreen", {stage, photoFile})`
   - 失敗時: エラー種別ごとのガイド表示（`TOO_FAR`→「スポットに近づいてね(あと◯m)」/ `NO_MATCH`→「看板全体が写るように」）
 
 #### `client/src/ui/screens/UnlockSuccessScreen.ts`
@@ -282,15 +276,15 @@ export const STAGES: StageDef[] = [ /* 調布, 布田・郷土博物館, 京王�
 
 #### `client/src/services/photoVerify.ts`
 ```ts
-export async function verify(stageId: number, file: File): Promise<VerifyResult> {
+export async function verify(spotId: string, file: File): Promise<VerifyResponse> {
   const pos = await getCurrentPositionOnce();          // services/geolocation.ts
   const resized = await resizeToJpeg(file, 1280, 0.85); // Canvas縮小（通信量・照合安定性）
   const fd = new FormData();
-  fd.append("photo", resized); fd.append("stageId", String(stageId));
+  fd.append("photo", resized); fd.append("spotId", spotId);
   fd.append("lat", String(pos.lat)); fd.append("lon", String(pos.lon));
   fd.append("token", getToken());
   const res = await fetch("/api/verify", { method: "POST", body: fd });
-  return res.json(); // { ok, matchScore?, error?: "TOO_FAR"|"NO_MATCH"|... }
+  return res.json(); // VerifyResponse（uecport-types.ts §6）: 成功時は progress スナップショット同梱
 }
 ```
 
@@ -306,7 +300,7 @@ export async function verify(stageId: number, file: File): Promise<VerifyResult>
 
 ### 4.2 サーバー
 
-#### `server/internal/stage/stage.go` + `stages.json`
+#### `server/internal/stage/stage.go` + `stages.master.json`
 - `Load(path)`: embed or ファイルからステージ定義を読む。**参照画像パス(refs)とpHashしきい値はサーバー定義にのみ持たせ、クライアントへ配布しない**（答えを配らない）
 
 #### `server/internal/stage/registry.go`
@@ -320,15 +314,15 @@ func (r *Registry) ServeWS(w http.ResponseWriter, req *http.Request) // ?stage=N
 - `handler.go`: `POST /api/verify`
   1. `r.ParseMultipartForm(6<<20)`、MIME検証（image/jpeg|png）
   2. レートリミット（token毎に30秒1回、メモリmapで十分）
-  3. `geofence.Check(stage.Spot, lat, lon, 150)` → NG なら `{"ok":false,"error":"TOO_FAR","distanceM":…}`
-  4. `phash.Match(img, stage.RefHashes, threshold)` → NG なら `NO_MATCH`
-  5. OK → `progress.Unlock(token, stageID)` → `{"ok":true,"matchScore":…}`
+  3. `geofence.Check(spot, lat, lon, spot.GeofenceM)` → NG なら `{"ok":false,"error":"TOO_FAR","distanceM":…}`
+  4. `phash.Match(img, spot.RefHashes, spot.Threshold)` → NG なら `NO_MATCH`
+  5. OK → `progress.UnlockBySpot(token, spotID)` → 更新後の `UserProgress` 全体を `{"ok":true,"matchScore":…,"progress":{…}}` で返す（クライアントは `progressStore.replace()` で丸ごと置換）
 - `phash.go`: `github.com/corona10/goimagehash`（pure Go・cgo不要）。起動時に参照画像2〜3枚/スポットをハッシュ化してキャッシュ。判定 `dist <= 20`（初期値、現地サンプルで調整）
 - `geofence.go`: 旧 `cp/distance.go` のHaversineをそのまま移植
 
 #### `server/internal/progress/store.go`
-- Redis: `HSET uecport:user:{token} unlocked "1,2" points 350` / `SADD uecport:shared:{token} {stageId}`
-- `Unlock / IsUnlocked / AddPoints / MarkShared`。既存 `session/redis.go` の接続を共用
+- Redis: `HSET uecport:user:{token} unlocked "1,2" points 350` / `SADD uecport:shared:{token} {spotId}`
+- `UnlockBySpot / IsUnlocked / AddPoints / MarkShared`。既存 `session/redis.go` の接続を共用
 
 ---
 
@@ -372,7 +366,7 @@ StageMapScreen等のDOM要素用に `client/src/style.css`（新設・Vite impor
 
 ### Phase 0: 準備（0.5日）
 1. `git checkout -b feat/uecport` 作業ブランチ作成
-2. `theme.ts` / `data/stages.ts`（座標は仮でよい）/ `stages.json` の骨組みコミット
+2. `theme.ts` / `data/types.ts` / `stages.master.json`（座標は仮でよい）の骨組みコミット
 - **検収**: `npm run build` と `go build ./...` が通る（何も壊していない）
 
 ### Phase 1: 不要機能の無効化とテーマ変更（2〜3日）
