@@ -1,0 +1,38 @@
+{
+  "family": "samether-dev-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::864617344104:role/samether-dev-ecs-task-execution-role",
+  "taskRoleArn": "arn:aws:iam::864617344104:role/samether-dev-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "server",
+      "image": "864617344104.dkr.ecr.ap-northeast-1.amazonaws.com/samether-dev-server:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "PORT",                  "value": "8080" },
+        { "name": "ROOM_CAPACITY",         "value": "50" },
+        { "name": "REDIS_ADDR",            "value": "master.samether-dev-redis.dpdgsf.apne1.cache.amazonaws.com" },
+        { "name": "LOCATION_TRACKER_NAME", "value": "samether-dev-tracker" },
+        { "name": "ALLOWED_ORIGIN",        "value": "https://d3cgvii4s99893.cloudfront.net" } 
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group":         "/ecs/samether-dev",
+          "awslogs-region":        "ap-northeast-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

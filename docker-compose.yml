@@ -1,0 +1,17 @@
+services:
+  samezario-server:
+    build: .
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_DB=0
+      - ROOM_ID=samezario-room-1
+      - ROOM_CAPACITY=50
+
+  redis:
+    image: redis:7.0-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
