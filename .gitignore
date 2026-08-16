@@ -1,0 +1,32 @@
+# Build artifacts
+client/dist/
+client/node_modules/
+server/samezario-server
+server/internal/static/assets/*
+!server/internal/static/assets/.gitkeep
+!server/internal/static/assets/index.html
+
+# Editor
+.vscode/
+.idea/
+.claude/
+
+# Superpowers documentation
+docs/superpowers/
+
+# OS
+.DS_Store
+*.swp
+
+# Zone.Identifier files (WSL)
+*:Zone.Identifier
+
+# AWS state file from deploy.sh
+infra/.deploy-state
+*.pem
+
+# Environment files
+.env
+.env.local
+docker-compose.override.yml
+

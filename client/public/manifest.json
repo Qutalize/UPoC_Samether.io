@@ -1,0 +1,22 @@
+{
+  "name": "Samether.io",
+  "short_name": "Samether",
+  "description": "サメになって海を制覇するゲーム",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#030a14",
+  "theme_color": "#030a14",
+  "icons": [
+    {
+      "src": "/images/shark.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/images/shark.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

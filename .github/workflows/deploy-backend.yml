@@ -1,0 +1,53 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "server/**"
+      - "Dockerfile"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: arn:aws:iam::864617344104:role/samether-dev-github-actions-role
+          aws-region: ap-northeast-1
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        id: build
+        run: |
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+          ECR_URI=864617344104.dkr.ecr.ap-northeast-1.amazonaws.com/samether-dev-server
+          docker build --platform linux/amd64 -t $ECR_URI:$IMAGE_TAG -t $ECR_URI:latest .
+          docker push $ECR_URI:$IMAGE_TAG
+          docker push $ECR_URI:latest
+          echo "image=$ECR_URI:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Render task definition
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infra/envs/dev/task-definition.json
+          container-name: server
+          image: ${{ steps.build.outputs.image }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: samether-dev-service
+          cluster: samether-dev-cluster
+          wait-for-service-stability: true

@@ -1,0 +1,70 @@
+{
+  "$comment": "★サーバー専用★ verify.server.json — 照合の『答え』にあたる参照画像としきい値。server/internal/verify/ がembedで読む。client/へのコピー・配信は厳禁（照合の答えを配ることになる）。",
+  "version": 1,
+  "verifySecrets": [
+    {
+      "spotId": "spot_fuda-tenjin",
+      "refImages": [
+        { "path": "refs/fuda-tenjin_sunny-am.jpg", "takenCondition": "晴れ・午前" },
+        { "path": "refs/fuda-tenjin_cloudy-pm.jpg", "takenCondition": "曇り・午後" }
+      ],
+      "phashThreshold": 20
+    },
+    {
+      "spotId": "spot_kyodo-museum",
+      "refImages": [
+        { "path": "refs/kyodo-museum_sunny-am.jpg", "takenCondition": "晴れ・午前" },
+        { "path": "refs/kyodo-museum_cloudy-pm.jpg", "takenCondition": "曇り・午後" },
+        { "path": "refs/kyodo-museum_evening.jpg", "takenCondition": "夕方" }
+      ],
+      "phashThreshold": 20
+    },
+    {
+      "spotId": "spot_tamagawa-josui",
+      "refImages": [{ "path": "refs/tamagawa-suijinja_a.jpg", "takenCondition": "晴れ・午後" }],
+      "phashThreshold": 22,
+      "$comment": "河川敷は背景変動が大きいためしきい値ゆるめ"
+    },
+    {
+      "spotId": "spot_kokuryo-jinja",
+      "refImages": [
+        { "path": "refs/kokuryo-jinja_a.jpg", "takenCondition": "晴れ・午前" },
+        { "path": "refs/kokuryo-jinja_b.jpg", "takenCondition": "曇り・午後" }
+      ],
+      "phashThreshold": 20
+    },
+    {
+      "spotId": "spot_kohaku-jinja",
+      "refImages": [{ "path": "refs/kohaku-jinja_a.jpg", "takenCondition": "晴れ・午前" }],
+      "phashThreshold": 20
+    },
+    {
+      "spotId": "spot_tsutsuji-monument",
+      "refImages": [{ "path": "refs/tsutsuji-icho_a.jpg", "takenCondition": "晴れ・午後" }],
+      "phashThreshold": 24,
+      "$comment": "樹木は季節変動が最大。現地チューニング必須。最悪ジオフェンス主判定に切替"
+    },
+    {
+      "spotId": "spot_kondo-isami",
+      "refImages": [
+        { "path": "refs/kondo-isami_a.jpg", "takenCondition": "晴れ・午前" },
+        { "path": "refs/kondo-isami_b.jpg", "takenCondition": "曇り・午後" }
+      ],
+      "phashThreshold": 18,
+      "$comment": "案内板は変動が少ないため厳しめでOK"
+    },
+    {
+      "spotId": "spot_ajista",
+      "refImages": [{ "path": "refs/ajista_a.jpg", "takenCondition": "晴れ・午後" }],
+      "phashThreshold": 20
+    },
+    {
+      "spotId": "spot_jindaiji-sanmon",
+      "refImages": [
+        { "path": "refs/jindaiji-sanmon_a.jpg", "takenCondition": "晴れ・午前" },
+        { "path": "refs/jindaiji-sanmon_b.jpg", "takenCondition": "曇り・午後" }
+      ],
+      "phashThreshold": 20
+    }
+  ]
+}

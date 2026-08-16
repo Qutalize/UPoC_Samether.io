@@ -1,0 +1,45 @@
+{
+  "$comment": "UserProgress のモック2種。initial = 新規ユーザー起動直後 / midGame = プレイ途中のサンプル。UIの状態別実装・Storybook的な確認・Redisシード投入にそのまま使える。",
+
+  "initial": {
+    "version": 1,
+    "token": "utk_5f2a9c7e14b3",
+    "playerName": "こうた",
+    "points": 0,
+    "unlockedAreaIds": [1],
+    "clearedSpots": {},
+    "updatedAt": "2026-07-13T09:00:00+09:00"
+  },
+
+  "midGame": {
+    "version": 1,
+    "token": "utk_5f2a9c7e14b3",
+    "playerName": "こうた",
+    "points": 460,
+    "unlockedAreaIds": [1, 2, 3],
+    "clearedSpots": {
+      "spot_fuda-tenjin": {
+        "spotId": "spot_fuda-tenjin",
+        "clearedAt": "2026-07-13T10:12:30+09:00",
+        "matchScore": 88,
+        "shared": true,
+        "sharedAt": "2026-07-13T10:14:02+09:00"
+      },
+      "spot_kyodo-museum": {
+        "spotId": "spot_kyodo-museum",
+        "clearedAt": "2026-07-13T11:05:11+09:00",
+        "matchScore": 92,
+        "shared": true,
+        "sharedAt": "2026-07-13T11:06:40+09:00"
+      },
+      "spot_kokuryo-jinja": {
+        "spotId": "spot_kokuryo-jinja",
+        "clearedAt": "2026-07-14T15:40:55+09:00",
+        "matchScore": 79,
+        "shared": false
+      }
+    },
+    "updatedAt": "2026-07-14T15:40:55+09:00",
+    "$derivedStateNote": "deriveAreaState()の期待値: 1,2,3=unlocked / 4=unlockable(requires:[3]済) / 6=unlockable(requires:[1]済) / 5,7=locked / 8=boss-sealed。points内訳: 布多天神50+シェア100+博物館100+シェア100+國領100+ゲーム内10"
+  }
+}

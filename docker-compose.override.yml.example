@@ -1,0 +1,34 @@
+# Docker Compose Override Example
+# Copy this file to docker-compose.override.yml for local development customization
+# This file is automatically loaded by docker-compose and not committed to git
+
+version: '3.8'
+
+services:
+  samezario-server:
+    # Override environment variables for local development
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_DB=0
+      - ROOM_ID=dev-room-1
+      - ROOM_CAPACITY=10
+      # - LOG_LEVEL=debug
+
+    # Mount source code for hot reload during development
+    volumes:
+      - ./server:/app/server:ro
+
+    # Override ports if needed
+    # ports:
+    #   - "8081:8080"
+
+  redis:
+    # Persist Redis data locally
+    volumes:
+      - redis-data:/data
+
+    # Set Redis password for local development
+    # command: redis-server --requirepass yourpassword
+
+volumes:
+  redis-data:

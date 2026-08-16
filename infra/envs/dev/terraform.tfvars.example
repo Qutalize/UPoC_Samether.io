@@ -1,0 +1,7 @@
+frontend_domain_name           = "samether.example.com"
+api_domain_name                = "api.samether.example.com"
+route53_zone_name              = "example.com."
+acm_certificate_arn            = "arn:aws:acm:ap-northeast-1:123456789012:certificate/replace-me"
+cloudfront_acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/replace-me"
+container_image                = "123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/samether-dev-server:latest"
+room_capacity                  = 50
