@@ -1,4 +1,4 @@
-FROM node:25-alpine AS client
+FROM node:26-alpine AS client
 WORKDIR /client
 COPY client/package.json client/package-lock.json ./
 RUN npm ci
